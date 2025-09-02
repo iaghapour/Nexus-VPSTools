@@ -28,7 +28,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/[YOUR-USERNAME]/[YOUR-REPO-NAM
 - مسدودسازی ترافیک عبوری به ایران
 - نصب پنل‌ها (همراه با لینک آموزش ویدیویی)
 
-- 3x-ui - Marzban - Libertea - s-ui - Blitz - h-ui
+3x-ui - Marzban - Libertea - s-ui - Blitz - h-ui
 
 
 
