@@ -36,19 +36,11 @@ bash <(curl -Ls https://raw.githubusercontent.com/[YOUR-USERNAME]/[YOUR-REPO-NAM
 <br>
 <br>
 
-🤝 مشارکت
 
-مشارکت در این پروژه کاملاً آزاد است. اگر ایده‌ای برای بهبود یا افزودن قابلیت‌های جدید دارید، لطفاً از طریق Pull Request یا Issues اقدام کنید.
+> اگر این پروژه را مفید یافتید، لطفاً به آن ستاره بدهید\! ⭐
 
-<br>
-<br>
+## ❤️ حمایت از پروژه:
 
-
-> If you find this project useful, please consider giving it a star\! ⭐
-
-## ❤️ Support the Project (Donate)
-
-Your support helps keep the project alive and running. Donations can be made via cryptocurrency. Thank you for your generosity\! 😊
 
 **Tron (TRC20):**
 
