@@ -12,7 +12,6 @@ A comprehensive Bash script to simplify and automate server management tasks on 
 - **💾 Professional Backups:** Full backup of files and databases with automatic cleanup of old archives.
 
 <br>
-<br>
 
 ## 🚀 Getting Started
 Simply copy and paste the following command into your server's terminal to run the script:
@@ -21,7 +20,6 @@ Simply copy and paste the following command into your server's terminal to run t
 bash <(curl -Ls https://raw.githubusercontent.com/[YOUR-USERNAME]/[YOUR-REPO-NAME]/main/nexus.sh)
 ```
 
-<br>
 <br>
 
 ## 📂 Features at a Glance
