@@ -43,11 +43,46 @@ bash <(curl -Ls https://raw.githubusercontent.com/[YOUR-USERNAME]/[YOUR-REPO-NAM
 <br>
 <br>
 
+
+> If you find this project useful, please consider giving it a star\! ⭐
+
+## ❤️ Support the Project (Donate)
+
+Your support helps keep the project alive and running. Donations can be made via cryptocurrency. Thank you for your generosity\! 😊
+
+**Tron (TRC20):**
+
+```
+TCKh8yp3ERWXK5YkfFPEkrcxedUeKiTd5w
+```
+
+**Litecoin (LTC):**
+
+```
+ltc1q03y2t3g5zgtjpgs9xwaxsjrz0uyqr59799n9ec
+```
+
+**Tether (USDT - TRC20):**
+
+```
+TCKh8yp3ERWXK5YkfFPEkrcxedUeKiTd5w
+```
+
+**Bitcoin (BTC):**
+
+```
+bc1qpkgkzuzeg9kzs42xft2a69tpxcrxk2y47ap607
+```
+
+<br>
+<br>
+
+
 📜 لایسنس
 
 این پروژه تحت لایسنس MIT منتشر شده است.
 
 <br>
-<br>
+
 
 ساخته شده با ❤️ توسط iAghapour
