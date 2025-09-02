@@ -11,6 +11,8 @@ A comprehensive Bash script to simplify and automate server management tasks on 
 - **🌐 Network Optimization:** Quickly change DNS resolvers and optimize repositories for the fastest updates (with support for Iranian mirrors).
 - **💾 Professional Backups:** Full backup of files and databases with automatic cleanup of old archives.
 
+<br>
+<br>
 
 ## 🚀 Getting Started
 Simply copy and paste the following command into your server's terminal to run the script:
@@ -32,10 +34,8 @@ bash <(curl -Ls https://raw.githubusercontent.com/[YOUR-USERNAME]/[YOUR-REPO-NAM
 - Panel Installation (with video tutorial links)
 - Panel List: 3x-ui - Marzban - Libertea - s-ui - Blitz - h-ui
 
-
 <br>
 <br>
-
 
 > If you find this project useful, please give it a star! ⭐
 
@@ -69,12 +69,10 @@ bc1qpkgkzuzeg9kzs42xft2a69tpxcrxk2y47ap607
 <br>
 <br>
 
-
 📜 License
 
 This project is licensed under the MIT License.
 
 <br>
-
 
 Created with ❤️ by iAghapour
