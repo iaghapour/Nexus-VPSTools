@@ -2,7 +2,7 @@
 
 A comprehensive Bash script to simplify and automate server management tasks on **Debian** and **Ubuntu**. This tool helps you quickly set up, manage, secure your server, and easily install various proxy/VPN panels.
 
-*Upload img*
+<img width="1140" height="1200" alt="Screenshot 2025-09-03 164742" src="https://github.com/user-attachments/assets/205df5f9-7c6d-4ed0-9574-6e0a1046789a" />
 
 ## ✨ Key Features
 - **🖥️ User-Friendly Interface:** An interactive, color-coded, and easy-to-understand menu for quick access to all tools.
