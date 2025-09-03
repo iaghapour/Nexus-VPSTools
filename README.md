@@ -30,7 +30,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/iaghapour/Nexus-VPSTools/main/
 - Firewall Management (UFW)
 - Block Forwarded Traffic to Iran
 - Panel Installation (with video tutorial links)
-- Panel List: [3x-ui](https://github.com/mhsanaei/3x-ui) - [Marzban](https://github.com/Gozargah/Marzban) - [Libertea](https://github.com/VZiChoushaDui/Libertea) - [s-ui](https://github.com/alireza0/s-ui) - [Blitz](https://github.com/ReturnFI/Blitz) - [h-ui](https://github.com/jonssonyan/h-ui)
+- Panel List: [3x-ui](https://github.com/mhsanaei/3x-ui) - [Marzban](https://github.com/Gozargah/Marzban) - [Libertea](https://github.com/VZiChoushaDui/Libertea) - [S-ui](https://github.com/alireza0/s-ui) - [Blitz](https://github.com/ReturnFI/Blitz) - [H-ui](https://github.com/jonssonyan/h-ui)
 
 <br>
 <br>
