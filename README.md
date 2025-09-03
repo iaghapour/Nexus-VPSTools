@@ -17,7 +17,7 @@ A comprehensive Bash script to simplify and automate server management tasks on 
 Simply copy and paste the following command into your server's terminal to run the script:
 
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/iaghapour/Nexus-VPSTools/refs/heads/main/install.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/iaghapour/Nexus-VPSTools/main/install.sh)
 ```
 
 <br>
