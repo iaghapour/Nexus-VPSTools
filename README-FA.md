@@ -31,8 +31,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/iaghapour/Nexus-VPSTools/main/
 - مدیریت فایروال (UFW)
 - مسدودسازی ترافیک عبوری به ایران
 - نصب پنل‌ها (همراه با لینک آموزش ویدیویی)
-- لیست پنل ها: 3x-ui - Marzban - Libertea - s-ui - Blitz - h-ui
-
+- لیست پنل ها: [3x-ui](https://github.com/mhsanaei/3x-ui) - [Marzban](https://github.com/Gozargah/Marzban) - [Libertea](https://github.com/VZiChoushaDui/Libertea) - [s-ui](https://github.com/alireza0/s-ui) - [Blitz](https://github.com/ReturnFI/Blitz) - [h-ui](https://github.com/jonssonyan/h-ui)
 
 <br>
 <br>
