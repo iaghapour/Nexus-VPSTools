@@ -175,7 +175,7 @@ restore_backup_menu() {
     fi
 }
 
-# --- NEW: Backup & Restore Sub-Menu ---
+# --- REFACTORED: Backup & Restore Sub-Menu ---
 backup_restore_menu() {
     while true; do
         clear
@@ -185,11 +185,16 @@ backup_restore_menu() {
         echo -e "   ${YELLOW}0)${OPTION_COLOR} Back to Main Menu"
         read -p "Enter your choice: " backup_choice
         case $backup_choice in
-            1) server_backup; break ;;
-            2) restore_backup_menu; break ;;
+            1) server_backup ;;
+            2) restore_backup_menu ;;
             0) break ;;
-            *) echo -e "${RED}Invalid option.${NC}"; sleep 2 ;;
+            *) echo -e "${RED}Invalid option.${NC}"; sleep 2; continue ;;
         esac
+        
+        # Pause for user confirmation before breaking the loop
+        echo -e "${YELLOW}Press Enter to return...${NC}"
+        read
+        break
     done
 }
 
@@ -280,7 +285,7 @@ EOF
 
 firewall_menu() {
     if ! command -v ufw &> /dev/null; then
-        echo "UFW not found. Installing..."
+        echo "UFW not found. Installing now...";
         apt-get update
         apt-get install -y ufw
     fi
