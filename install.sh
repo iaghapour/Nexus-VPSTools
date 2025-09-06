@@ -66,14 +66,14 @@ EOF
         echo "MySQL detected. Backing up all databases..."
         mkdir -p "$backup_path/mysql"
         mysqldump --all-databases > "$backup_path/mysql/all-databases-$(date +%Y-%m-%d).sql"
-        if [ $? -eq 0 ]; then echo "Database backup successful."; sources_to_backup="$sources_to_backup $backup_path/mysql"; else echo "Database backup failed."; fi
+        if [ $? -eq 0 ]; then echo "Database backup successful."; else echo "Database backup failed."; fi
     else
         echo "MySQL not found, skipping database backup."
     fi
     local backup_file="backup-$(date +%Y-%m-%d-%H-%M-%S).tar.gz"
     local full_backup_path="$backup_path/$backup_file"
     echo "Starting file backup... This may take a while."
-    tar -czf "$full_backup_path" --exclude-from="$exclude_list_file" -C / $sources_to_backup 2>/dev/null
+    tar -czpf "$full_backup_path" --exclude-from="$exclude_list_file" -C / $sources_to_backup 2>/dev/null
     if [ -f "$full_backup_path" ]; then
         echo "Verifying backup integrity..."
         if gzip -t "$full_backup_path"; then
@@ -91,7 +91,91 @@ EOF
     exec > /dev/tty 2>&1
 }
 
-# --- REFACTORED: repository_menu Function ---
+# --- NEW: Restore Backup Function ---
+restore_backup_menu() {
+    echo -e "${HEADER_COLOR}--- Restore Server from Backup ---${NC}"
+    local backup_path="/root/backups"
+
+    if [ ! -d "$backup_path" ]; then
+        echo -e "${RED}Backup directory not found: $backup_path${NC}"; return
+    fi
+
+    mapfile -t backups < <(find "$backup_path" -maxdepth 1 -type f -name "backup-*.tar.gz" | sort -r)
+
+    if [ ${#backups[@]} -eq 0 ]; then
+        echo -e "${YELLOW}No backup files found in $backup_path${NC}"; return
+    fi
+
+    echo "Available backups (newest first):"
+    local i=1
+    for backup in "${backups[@]}"; do
+        echo "   ${YELLOW}${i})${OPTION_COLOR} $(basename "$backup")"
+        i=$((i+1))
+    done
+    echo "   ${YELLOW}0)${OPTION_COLOR} Cancel"
+
+    read -p "Enter the number of the backup to restore: " choice
+
+    if ! [[ "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 0 ] || [ "$choice" -gt ${#backups[@]} ]; then
+        echo -e "${RED}Invalid selection.${NC}"; return
+    fi
+
+    if [ "$choice" -eq 0 ]; then echo "Restore cancelled."; return; fi
+
+    local selected_backup="${backups[$((choice-1))]}"
+    
+    echo -e "\n${RED}!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!"
+    echo -e "You are about to restore the server from:"
+    echo -e "${WHITE}$(basename "$selected_backup")${NC}"
+    echo -e "${RED}This action is IRREVERSIBLE and will OVERWRITE all current data in:"
+    echo -e "${YELLOW}/root, /home, /etc${NC}"
+    echo -e "${RED}and restore all MySQL databases from the backup date."
+    echo -e "It is strongly recommended to do this on a fresh server."
+    echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!${NC}"
+    read -p "To confirm, please type 'YES' in all caps: " confirmation
+
+    if [ "$confirmation" != "YES" ]; then
+        echo -e "${GREEN}Restore cancelled. No changes were made.${NC}"; return
+    fi
+
+    echo -e "\n${YELLOW}Starting restore process... Do not interrupt!${NC}"
+    
+    echo "Restoring files from $(basename "$selected_backup")..."
+    if tar -xpf "$selected_backup" -C /; then
+        echo -e "${GREEN}File restore completed successfully.${NC}"
+    else
+        echo -e "${RED}File restore failed. Aborting.${NC}"; return 1
+    fi
+
+    local backup_date=$(basename "$selected_backup" | cut -d'-' -f2-4)
+    local sql_backup_file="$backup_path/mysql/all-databases-${backup_date}.sql"
+
+    if [ -f "$sql_backup_file" ]; then
+        if command -v mysql &> /dev/null; then
+            echo "Restoring MySQL databases from $(basename "$sql_backup_file")..."
+            if mysql < "$sql_backup_file"; then
+                echo -e "${GREEN}Database restore completed successfully.${NC}"
+            else
+                echo -e "${RED}Database restore failed. Please check MySQL logs.${NC}"
+            fi
+        else
+            echo -e "${YELLOW}MySQL is not installed. Skipping database restore.${NC}"
+        fi
+    else
+        echo -e "${YELLOW}No matching SQL backup file found for this date. Skipping database restore.${NC}"
+    fi
+
+    echo -e "\n${GREEN}Restore process finished!${NC}"
+    echo -e "${YELLOW}A system reboot is highly recommended to apply all changes correctly.${NC}"
+    read -p "Do you want to reboot now? (y/N): " reboot_choice
+    if [[ "$reboot_choice" =~ ^[Yy]$ ]]; then
+        echo "Rebooting now..."
+        reboot
+    else
+        echo "Please reboot the server manually as soon as possible."
+    fi
+}
+
 repository_menu() {
     source /etc/os-release
     while true; do
@@ -104,7 +188,6 @@ repository_menu() {
         read -p "Enter your choice: " repo_choice
         case $repo_choice in
             1)
-                # Logic for German repository
                 local repo_url=""
                 if [[ "$ID" == "ubuntu" ]]; then
                     repo_url="http://de.archive.ubuntu.com"
@@ -115,15 +198,12 @@ repository_menu() {
                 else
                     echo -e "${RED}Unsupported OS: $ID.${NC}"; sleep 3; continue
                 fi
-                echo "Changing main repository to $repo_url...";
-                apt-get update
+                echo "Changing main repository to $repo_url..."; apt-get update
                 echo -e "${GREEN}Repository changed. 'apt update' is complete.${NC}"
                 ;;
             2)
-                # NEW LOGIC for ArvanCloud repository
                 echo "Backing up /etc/apt/sources.list to /etc/apt/sources.list.bak-$(date +%F)..."
                 cp /etc/apt/sources.list /etc/apt/sources.list.bak-$(date +%F)
-
                 if [[ "$ID" == "ubuntu" ]]; then
                     echo "Changing repository to ArvanCloud mirror for Ubuntu ($VERSION_CODENAME)..."
                     cat << EOF > /etc/apt/sources.list
@@ -141,21 +221,11 @@ EOF
                 apt-get update
                 echo -e "${GREEN}Repository changed to ArvanCloud. 'apt update' is complete.${NC}"
                 ;;
-            3)
-                nano /etc/apt/sources.list
-                echo -e "${GREEN}Manual edit complete.${NC}"
-                ;;
-            0)
-                break
-                ;;
-            *)
-                echo -e "${RED}Invalid option.${NC}"; sleep 2
-                continue
-                ;;
+            3) nano /etc/apt/sources.list; echo -e "${GREEN}Manual edit complete.${NC}" ;;
+            0) break ;;
+            *) echo -e "${RED}Invalid option.${NC}"; sleep 2; continue ;;
         esac
-        echo -e "${YELLOW}Press Enter to return...${NC}"
-        read
-        break
+        echo -e "${YELLOW}Press Enter to return...${NC}"; read; break
     done
 }
 
@@ -187,9 +257,7 @@ EOF
             0) break ;;
             *) echo -e "${RED}Invalid option.${NC}"; sleep 2; continue ;;
         esac
-        echo -e "${YELLOW}Press Enter to return...${NC}"
-        read
-        break
+        echo -e "${YELLOW}Press Enter to return...${NC}"; read; break
     done
 }
 
@@ -238,7 +306,7 @@ show_panel_warning() {
     echo -e "${WHITE}If you encounter network or package download failures, it is often"
     echo -e "due to repository issues."
     echo -e ""
-    echo -e "${GREEN}Solution: Return to the main menu, select option '3) Change"
+    echo -e "${GREEN}Solution: Return to the main menu, select option '4) Change"
     echo -e "Repository', and switch to the 'German Repository'.${NC}"
     echo -e "${YELLOW}--------------------------------------------------------------------${NC}"
     echo ""
@@ -385,22 +453,23 @@ show_menu() {
     echo -e "${HEADER_COLOR}--- Server Tools ---${NC}"
     echo -e "   ${YELLOW}1)${OPTION_COLOR} Update server and install dependencies"
     echo -e "   ${YELLOW}2)${OPTION_COLOR} Server Backup (Professional)"
-    echo -e "   ${YELLOW}3)${OPTION_COLOR} Change Repository"
-    echo -e "   ${YELLOW}4)${OPTION_COLOR} Change Nameserver"
-    echo -e "   ${YELLOW}5)${OPTION_COLOR} Firewall (UFW) Management"
+    echo -e "   ${YELLOW}3)${OPTION_COLOR} Restore Backup from file"
+    echo -e "   ${YELLOW}4)${OPTION_COLOR} Change Repository"
+    echo -e "   ${YELLOW}5)${OPTION_COLOR} Change Nameserver"
+    echo -e "   ${YELLOW}6)${OPTION_COLOR} Firewall (UFW) Management"
     echo ""
     echo -e "${HEADER_COLOR}--- Panels ---${NC}"
-    echo -e "   ${YELLOW}6)${OPTION_COLOR} Install 3x-ui ${GREEN}(Xray Core)${NC}"
-    echo -e "   ${YELLOW}7)${OPTION_COLOR} Install Marzban ${GREEN}(Xray Core)${NC}"
-    echo -e "   ${YELLOW}8)${OPTION_COLOR} Install Libertea ${GREEN}(Xray Core)${NC}"
-    echo -e "   ${YELLOW}9)${OPTION_COLOR} Install s-ui ${GREEN}(Sing-Box Core)${NC}"
-    echo -e "  ${YELLOW}10)${OPTION_COLOR} Install Blitz ${GREEN}(Hysteria & Sing-Box Core)${NC}"
-    echo -e "  ${YELLOW}11)${OPTION_COLOR} Install h-ui ${GREEN}(Hysteria Core)${NC}"
+    echo -e "   ${YELLOW}7)${OPTION_COLOR} Install 3x-ui ${GREEN}(Xray Core)${NC}"
+    echo -e "   ${YELLOW}8)${OPTION_COLOR} Install Marzban ${GREEN}(Xray Core)${NC}"
+    echo -e "   ${YELLOW}9)${OPTION_COLOR} Install Libertea ${GREEN}(Xray Core)${NC}"
+    echo -e "  ${YELLOW}10)${OPTION_COLOR} Install s-ui ${GREEN}(Sing-Box Core)${NC}"
+    echo -e "  ${YELLOW}11)${OPTION_COLOR} Install Blitz ${GREEN}(Hysteria & Sing-Box Core)${NC}"
+    echo -e "  ${YELLOW}12)${OPTION_COLOR} Install h-ui ${GREEN}(Hysteria Core)${NC}"
     echo ""
     echo -e "${HEADER_COLOR}--- Side Tools ---${NC}"
-    echo -e "  ${YELLOW}12)${OPTION_COLOR} Reverse Tunnel ${RED}(SOON)${NC}"
-    echo -e "  ${YELLOW}13)${OPTION_COLOR} Block Forwarded Traffic to Iran"
-    echo -e "  ${YELLOW}14)${OPTION_COLOR} SpeedTest"
+    echo -e "  ${YELLOW}13)${OPTION_COLOR} Reverse Tunnel ${RED}(SOON)${NC}"
+    echo -e "  ${YELLOW}14)${OPTION_COLOR} Block Forwarded Traffic to Iran"
+    echo -e "  ${YELLOW}15)${OPTION_COLOR} SpeedTest"
     echo ""
     echo -e "   ${YELLOW}0)${OPTION_COLOR} QUIT"
     echo -e "${YELLOW}--------------------------------------------------${NC}"
@@ -411,27 +480,28 @@ main() {
     check_root
     while true; do
         show_menu
-        read -p "Enter your choice [0-14]: " choice
+        read -p "Enter your choice [0-15]: " choice
         case $choice in
             1) update_server ;;
             2) server_backup ;;
-            3) repository_menu ;;
-            4) nameserver_menu ;;
-            5) firewall_menu ;;
-            6) install_3xui ;;
-            7) install_marzban ;;
-            8) install_libertea ;;
-            9) install_sui ;;
-            10) install_blitz ;;
-            11) install_hui ;;
-            12) reverse_proxy ;;
-            13) block_iran_traffic_menu ;;
-            14) run_speedtest ;;
+            3) restore_backup_menu ;;
+            4) repository_menu ;;
+            5) nameserver_menu ;;
+            6) firewall_menu ;;
+            7) install_3xui ;;
+            8) install_marzban ;;
+            9) install_libertea ;;
+            10) install_sui ;;
+            11) install_blitz ;;
+            12) install_hui ;;
+            13) reverse_proxy ;;
+            14) block_iran_traffic_menu ;;
+            15) run_speedtest ;;
             0) echo -e "${GREEN}Goodbye!${NC}"; exit 0 ;;
             *) echo -e "${RED}Error: Invalid option.${NC}" ;;
         esac
         
-        if [[ "$choice" -ne 3 && "$choice" -ne 4 && "$choice" -ne 5 && "$choice" -ne 13 ]]; then
+        if [[ "$choice" -ne 3 && "$choice" -ne 4 && "$choice" -ne 5 && "$choice" -ne 6 && "$choice" -ne 14 ]]; then
             echo -e "${YELLOW}Press Enter to return to the main menu...${NC}"
             read
         fi
