@@ -91,7 +91,6 @@ EOF
     exec > /dev/tty 2>&1
 }
 
-# --- NEW: Restore Backup Function ---
 restore_backup_menu() {
     echo -e "${HEADER_COLOR}--- Restore Server from Backup ---${NC}"
     local backup_path="/root/backups"
@@ -174,6 +173,24 @@ restore_backup_menu() {
     else
         echo "Please reboot the server manually as soon as possible."
     fi
+}
+
+# --- NEW: Backup & Restore Sub-Menu ---
+backup_restore_menu() {
+    while true; do
+        clear
+        echo -e "${HEADER_COLOR}--- Backup & Restore Menu ---${NC}"
+        echo -e "   ${YELLOW}1)${OPTION_COLOR} Create a new backup (Professional)"
+        echo -e "   ${YELLOW}2)${OPTION_COLOR} Restore from a backup file"
+        echo -e "   ${YELLOW}0)${OPTION_COLOR} Back to Main Menu"
+        read -p "Enter your choice: " backup_choice
+        case $backup_choice in
+            1) server_backup; break ;;
+            2) restore_backup_menu; break ;;
+            0) break ;;
+            *) echo -e "${RED}Invalid option.${NC}"; sleep 2 ;;
+        esac
+    done
 }
 
 repository_menu() {
@@ -306,7 +323,7 @@ show_panel_warning() {
     echo -e "${WHITE}If you encounter network or package download failures, it is often"
     echo -e "due to repository issues."
     echo -e ""
-    echo -e "${GREEN}Solution: Return to the main menu, select option '4) Change"
+    echo -e "${GREEN}Solution: Return to the main menu, select option '3) Change"
     echo -e "Repository', and switch to the 'German Repository'.${NC}"
     echo -e "${YELLOW}--------------------------------------------------------------------${NC}"
     echo ""
@@ -452,24 +469,23 @@ show_menu() {
     echo -e "${YELLOW}--------------------------------------------------${NC}"
     echo -e "${HEADER_COLOR}--- Server Tools ---${NC}"
     echo -e "   ${YELLOW}1)${OPTION_COLOR} Update server and install dependencies"
-    echo -e "   ${YELLOW}2)${OPTION_COLOR} Server Backup (Professional)"
-    echo -e "   ${YELLOW}3)${OPTION_COLOR} Restore Backup from file"
-    echo -e "   ${YELLOW}4)${OPTION_COLOR} Change Repository"
-    echo -e "   ${YELLOW}5)${OPTION_COLOR} Change Nameserver"
-    echo -e "   ${YELLOW}6)${OPTION_COLOR} Firewall (UFW) Management"
+    echo -e "   ${YELLOW}2)${OPTION_COLOR} Backup & Restore Management"
+    echo -e "   ${YELLOW}3)${OPTION_COLOR} Change Repository"
+    echo -e "   ${YELLOW}4)${OPTION_COLOR} Change Nameserver"
+    echo -e "   ${YELLOW}5)${OPTION_COLOR} Firewall (UFW) Management"
     echo ""
     echo -e "${HEADER_COLOR}--- Panels ---${NC}"
-    echo -e "   ${YELLOW}7)${OPTION_COLOR} Install 3x-ui ${GREEN}(Xray Core)${NC}"
-    echo -e "   ${YELLOW}8)${OPTION_COLOR} Install Marzban ${GREEN}(Xray Core)${NC}"
-    echo -e "   ${YELLOW}9)${OPTION_COLOR} Install Libertea ${GREEN}(Xray Core)${NC}"
-    echo -e "  ${YELLOW}10)${OPTION_COLOR} Install s-ui ${GREEN}(Sing-Box Core)${NC}"
-    echo -e "  ${YELLOW}11)${OPTION_COLOR} Install Blitz ${GREEN}(Hysteria & Sing-Box Core)${NC}"
-    echo -e "  ${YELLOW}12)${OPTION_COLOR} Install h-ui ${GREEN}(Hysteria Core)${NC}"
+    echo -e "   ${YELLOW}6)${OPTION_COLOR} Install 3x-ui ${GREEN}(Xray Core)${NC}"
+    echo -e "   ${YELLOW}7)${OPTION_COLOR} Install Marzban ${GREEN}(Xray Core)${NC}"
+    echo -e "   ${YELLOW}8)${OPTION_COLOR} Install Libertea ${GREEN}(Xray Core)${NC}"
+    echo -e "   ${YELLOW}9)${OPTION_COLOR} Install s-ui ${GREEN}(Sing-Box Core)${NC}"
+    echo -e "  ${YELLOW}10)${OPTION_COLOR} Install Blitz ${GREEN}(Hysteria & Sing-Box Core)${NC}"
+    echo -e "  ${YELLOW}11)${OPTION_COLOR} Install h-ui ${GREEN}(Hysteria Core)${NC}"
     echo ""
     echo -e "${HEADER_COLOR}--- Side Tools ---${NC}"
-    echo -e "  ${YELLOW}13)${OPTION_COLOR} Reverse Tunnel ${RED}(SOON)${NC}"
-    echo -e "  ${YELLOW}14)${OPTION_COLOR} Block Forwarded Traffic to Iran"
-    echo -e "  ${YELLOW}15)${OPTION_COLOR} SpeedTest"
+    echo -e "  ${YELLOW}12)${OPTION_COLOR} Reverse Tunnel ${RED}(SOON)${NC}"
+    echo -e "  ${YELLOW}13)${OPTION_COLOR} Block Forwarded Traffic to Iran"
+    echo -e "  ${YELLOW}14)${OPTION_COLOR} SpeedTest"
     echo ""
     echo -e "   ${YELLOW}0)${OPTION_COLOR} QUIT"
     echo -e "${YELLOW}--------------------------------------------------${NC}"
@@ -480,28 +496,27 @@ main() {
     check_root
     while true; do
         show_menu
-        read -p "Enter your choice [0-15]: " choice
+        read -p "Enter your choice [0-14]: " choice
         case $choice in
             1) update_server ;;
-            2) server_backup ;;
-            3) restore_backup_menu ;;
-            4) repository_menu ;;
-            5) nameserver_menu ;;
-            6) firewall_menu ;;
-            7) install_3xui ;;
-            8) install_marzban ;;
-            9) install_libertea ;;
-            10) install_sui ;;
-            11) install_blitz ;;
-            12) install_hui ;;
-            13) reverse_proxy ;;
-            14) block_iran_traffic_menu ;;
-            15) run_speedtest ;;
+            2) backup_restore_menu ;;
+            3) repository_menu ;;
+            4) nameserver_menu ;;
+            5) firewall_menu ;;
+            6) install_3xui ;;
+            7) install_marzban ;;
+            8) install_libertea ;;
+            9) install_sui ;;
+            10) install_blitz ;;
+            11) install_hui ;;
+            12) reverse_proxy ;;
+            13) block_iran_traffic_menu ;;
+            14) run_speedtest ;;
             0) echo -e "${GREEN}Goodbye!${NC}"; exit 0 ;;
             *) echo -e "${RED}Error: Invalid option.${NC}" ;;
         esac
         
-        if [[ "$choice" -ne 3 && "$choice" -ne 4 && "$choice" -ne 5 && "$choice" -ne 6 && "$choice" -ne 14 ]]; then
+        if [[ "$choice" -ne 2 && "$choice" -ne 3 && "$choice" -ne 4 && "$choice" -ne 5 && "$choice" -ne 13 ]]; then
             echo -e "${YELLOW}Press Enter to return to the main menu...${NC}"
             read
         fi
