@@ -499,22 +499,19 @@ setup_fake_site() {
     clear
     echo -e "${HEADER_COLOR}--- Setup Fake Website (Nginx + SSL) ---${NC}"
     echo -e "${YELLOW}--------------------------------------------------------------------${NC}"
-    echo -e "${WHITE}This tool will install Nginx and configure a fake website on your"
-    echo -e "server with a valid SSL certificate from Let's Encrypt."
+    echo -e "${WHITE}This tool will install Nginx and configure a fake website with a"
+    echo -e "valid SSL certificate. Please follow the steps carefully."
     echo -e ""
-    echo -e "${RED}REQUIREMENTS:${NC}"
-    echo -e "  1. You must have a ${WHITE}domain name${NC} (e.g., my-vps.com)."
-    echo -e "  2. In your DNS provider, create an ${WHITE}A record${NC} pointing your domain to"
-    echo -e "     this server's IP: ${GREEN}$(curl -4s ifconfig.me)${NC}" # Force IPv4 for IP address display
-    echo -e "  3. The Cloudflare proxy (orange cloud) should be ${WHITE}ON${NC}."
-    echo -e "  4. ${RED}CRITICAL:${NC} In Cloudflare's SSL/TLS tab, set the mode to ${GREEN}Full (Strict)${NC}."
-    echo -e "     Using 'Flexible' mode will cause a redirect loop error."
-    echo ""
-    echo -e "${YELLOW}INFO:${NC} Nginx will use port 443 (HTTPS) and port 80 (to redirect"
-    echo -e "all HTTP traffic to HTTPS)."
+    echo -e "${HEADER_COLOR}PRE-INSTALLATION STEPS:${NC}"
+    echo -e "  1. You must have a ${WHITE}domain name${NC}."
+    echo -e "  2. In your DNS provider (e.g., Cloudflare), create an ${WHITE}A record${NC} pointing"
+    echo -e "     your domain to this server's IP: ${GREEN}$(curl -4s ifconfig.me)${NC}"
+    echo -e "  3. ${RED}CRITICAL FOR INSTALLATION:${NC} The Cloudflare proxy must be"
+    echo -e "     ${WHITE}OFF${NC} (grey cloud) for the certificate to be issued correctly."
+    echo -e "     ${YELLOW}(You will be instructed to turn it ON after installation).${NC}"
     echo -e "${YELLOW}--------------------------------------------------------------------${NC}"
     
-    read -p "Have you completed all the requirements above? (y/N): " confirmation
+    read -p "Have you completed all the pre-installation steps above? (y/N): " confirmation
     if [[ ! "$confirmation" =~ ^[Yy]$ ]]; then
         echo -e "${RED}Action cancelled. Please complete the requirements first.${NC}"
         return
@@ -560,17 +557,23 @@ setup_fake_site() {
     
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}--------------------------------------------------${NC}"
-        echo -e "${GREEN}SUCCESS! Your fake website is now live at:${NC}"
-        echo -e "${WHITE}https://$domain_name${NC}"
-        echo -e "${GREEN}The SSL certificate will be renewed automatically.${NC}"
+        echo -e "${GREEN}SUCCESS! The fake website is installed.${NC}"
+        echo ""
+        echo -e "${HEADER_COLOR}FINAL STEPS (VERY IMPORTANT):${NC}"
+        echo -e "  1. Go back to your Cloudflare dashboard."
+        echo -e "  2. Turn the proxy ${YELLOW}ON${NC} (orange cloud) for your domain."
+        echo -e "  3. Go to the ${WHITE}SSL/TLS${NC} tab."
+        echo -e "  4. Set the encryption mode to ${GREEN}Full (Strict)${NC}."
+        echo ""
+        echo -e "${WHITE}Your site is now live and secure at: https://$domain_name${NC}"
         echo -e "${GREEN}--------------------------------------------------${NC}"
     else
         echo -e "${RED}--------------------------------------------------${NC}"
         echo -e "${RED}Error: Failed to obtain an SSL certificate.${NC}"
         echo -e "${YELLOW}Please check the following:${NC}"
         echo -e "  - Your domain is correctly pointed to this server's IP."
+        echo -e "  - The Cloudflare proxy is OFF (grey cloud)."
         echo -e "  - Port 80 is not blocked by any other firewall."
-        echo -e "  - You are not exceeding Let's Encrypt rate limits."
         echo -e "${RED}--------------------------------------------------${NC}"
     fi
 }
@@ -580,7 +583,7 @@ show_menu() {
     echo -e "${WHITE}Created by YouTube Channel: ${GREEN}@iAghapour${NC}"
     echo -e "${OPTION_COLOR}Tutorials for all these scripts are available on the channel${NC}"
     echo -e "${WHITE}https://www.youtube.com/@iAghapour${NC}"
-    echo -e "${RED}ver 1.5${NC}"
+    echo -e "${RED}ver 1.6${NC}"
     echo -e "${YELLOW}--------------------------------------------------${NC}"
     echo -e "${WHITE}                      Main Menu${NC}"
     echo -e "${YELLOW}--------------------------------------------------${NC}"
