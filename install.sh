@@ -20,14 +20,14 @@ OPTION_COLOR=$WHITE
 # --- Server Tools Functions ---
 
 update_server() {
-    echo -e "${HEADER_COLOR}--- Starting Server Update and Dependency Installation ---${NC}"
+    echo -e "${HEADER_COLOR}--- Starting Server Update and Essential Dependency Installation ---${NC}"
     if command -v apt-get &> /dev/null; then
         apt-get update && apt-get upgrade -y
         apt-get install -y debian-archive-keyring
-        apt-get install -y curl wget socat git nano docker-compose ipset
+        apt-get install -y curl wget socat git nano ipset
     elif command -v yum &> /dev/null; then
         yum update -y
-        yum install -y curl wget socat git nano docker-compose ipset
+        yum install -y curl wget socat git nano ipset
     else
         echo -e "${RED}Error: Unsupported package manager.${NC}"; return 1
     fi
@@ -175,7 +175,6 @@ restore_backup_menu() {
     fi
 }
 
-# --- REFACTORED: Backup & Restore Sub-Menu ---
 backup_restore_menu() {
     while true; do
         clear
@@ -191,7 +190,6 @@ backup_restore_menu() {
             *) echo -e "${RED}Invalid option.${NC}"; sleep 2; continue ;;
         esac
         
-        # Pause for user confirmation before breaking the loop
         echo -e "${YELLOW}Press Enter to return...${NC}"
         read
         break
@@ -320,7 +318,6 @@ firewall_menu() {
     done
 }
 
-# --- Pre-installation Warning Function ---
 show_panel_warning() {
     echo -e "${YELLOW}--------------------------------------------------------------------"
     echo -e "${YELLOW}IMPORTANT NOTE BEFORE INSTALLATION${NC}"
@@ -334,7 +331,6 @@ show_panel_warning() {
     echo ""
 }
 
-# --- Helper function for panel installation ---
 run_panel_installer() {
     local panel_name="$1"
     local install_command="$2"
@@ -347,8 +343,6 @@ run_panel_installer() {
     
     eval "$install_command"
 }
-
-# --- Panel Installation Functions (Refactored) ---
 
 install_3xui() {
     run_panel_installer "3x-ui" \
@@ -387,24 +381,27 @@ install_marzban() {
     read -p "Press Enter to continue with the installation..."
     
     echo -e "${HEADER_COLOR}--- Installing Marzban Panel ---${NC}"
-    echo -e "${WHITE}===> When you see the log messages, PRESS CTRL+C to continue the script <===${NC}"
+    echo -e "${WHITE}The Marzban installer will now run. It will handle its own dependencies (like Docker).${NC}"
     read -p "Press Enter to begin..."
     bash -c "$(curl -sL https://github.com/Gozargah/Marzban-scripts/raw/master/marzban.sh)" @ install
-    echo -e "${GREEN}OK! Starting Marzban services in the background...${NC}"
-    if [ -f /opt/marzban/docker-compose.yml ]; then
-        docker-compose -f /opt/marzban/docker-compose.yml up -d
-    else
-        echo -e "${RED}Error: Marzban docker-compose file not found.${NC}"; return 1
+    
+    echo -e "${GREEN}Marzban installation script finished. Continuing with setup...${NC}"
+    
+    if [ ! -f /opt/marzban/docker-compose.yml ]; then
+        echo -e "${RED}Error: Marzban docker-compose file not found. Installation may have failed.${NC}"; return 1
     fi
+
     echo -e "${HEADER_COLOR}--- Create Sudo Admin User ---${NC}"
-    marzban cli admin create --sudo
+    echo -e "${WHITE}Please follow the prompts to create your first admin user.${NC}"
+    docker-compose -f /opt/marzban/docker-compose.yml run --rm marzban cli admin create --sudo
+    
+    echo -e "${HEADER_COLOR}--- Starting Marzban Services ---${NC}"
+    docker-compose -f /opt/marzban/docker-compose.yml up -d
+    
     echo -e "${HEADER_COLOR}--- IMPORTANT: SSL CERTIFICATE ---${NC}"
     echo -e "${YELLOW}Follow the official documentation to issue a certificate:${NC}"
     echo -e "${WHITE}https://gozargah.github.io/marzban/en/examples/issue-ssl-certificate${NC}"
 }
-
-
-# --- Side Tools Functions ---
 
 run_speedtest() {
     if ! command -v speedtest &> /dev/null; then
@@ -424,15 +421,18 @@ reverse_proxy() {
 
 block_iran_traffic_menu() {
     if ! command -v ipset &> /dev/null; then
-        echo "ipset not found. Installing...";
-        apt-get update
-        apt-get install -y ipset
+        echo "ipset not found. Installing..."; apt-get update; apt-get install -y ipset;
     fi
+    if ! dpkg -l | grep -q iptables-persistent; then
+        echo "iptables-persistent not found. Installing...";
+        apt-get install -y iptables-persistent
+    fi
+
     while true; do
         clear
         echo -e "${HEADER_COLOR}--- Block Forwarded Traffic to Iran ---${NC}"
-        echo -e "${YELLOW}1)${OPTION_COLOR} Block traffic to Iran"
-        echo -e "${YELLOW}2)${OPTION_COLOR} Unblock traffic to Iran"
+        echo -e "${YELLOW}1)${OPTION_COLOR} Block traffic to Iran (and make it persistent)"
+        echo -e "${YELLOW}2)${OPTION_COLOR} Unblock traffic to Iran (and remove persistence)"
         echo -e "${YELLOW}0)${OPTION_COLOR} Back to Main Menu"
         read -p "Enter your choice: " block_choice
         case $block_choice in
@@ -440,20 +440,53 @@ block_iran_traffic_menu() {
                 echo "Step 1: Downloading Iran IP list..."
                 curl -4sL -o /tmp/iran_ips.txt https://raw.githubusercontent.com/herrbischoff/country-ip-blocks/master/ipv4/ir.cidr
                 if [ $? -ne 0 ] || [ ! -s /tmp/iran_ips.txt ]; then echo -e "${RED}Failed to download IP list.${NC}"; break; fi
+                
                 echo "Step 2: Preparing the ipset 'iran_dst'..."
                 ipset create iran_dst hash:net -exist; ipset flush iran_dst
+                
                 echo "Step 3: Adding IPs to the ipset..."
                 while read -r ip; do ipset add iran_dst "$ip"; done < /tmp/iran_ips.txt
+                
                 echo "Step 4: Applying firewall rule to FORWARD chain..."
-                if ! iptables -C FORWARD -m set --match-set iran_dst dst -j DROP &> /dev/null; then iptables -A FORWARD -m set --match-set iran_dst dst -j DROP; fi
-                if iptables -C FORWARD -m set --match-set iran_dst dst -j DROP &> /dev/null; then echo -e "${GREEN}Forwarded traffic to Iran has been blocked.${NC}"; else echo -e "${RED}Failed to apply firewall rule.${NC}"; fi
+                if ! iptables -C FORWARD -m set --match-set iran_dst dst -j DROP &> /dev/null; then
+                    iptables -A FORWARD -m set --match-set iran_dst dst -j DROP
+                fi
+
+                echo "Step 5: Saving rules to make them persistent across reboots..."
+                ipset save iran_dst > /etc/ipset.conf
+                cat << EOF > /etc/systemd/system/ipset-restore.service
+[Unit]
+Description=Restore ipset rules
+Before=netfilter-persistent.service
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/ipset restore -f /etc/ipset.conf
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+                systemctl enable ipset-restore.service >/dev/null 2>&1
+                iptables-save > /etc/iptables/rules.v4
+
+                echo -e "${GREEN}Forwarded traffic to Iran has been blocked and rules are now persistent.${NC}"
                 rm /tmp/iran_ips.txt; break
                 ;;
             2)
                 echo "Unblocking forwarded traffic to Iran...";
-                if iptables -C FORWARD -m set --match-set iran_dst dst -j DROP &> /dev/null; then iptables -D FORWARD -m set --match-set iran_dst dst -j DROP; fi
+                if iptables -C FORWARD -m set --match-set iran_dst dst -j DROP &> /dev/null; then
+                    iptables -D FORWARD -m set --match-set iran_dst dst -j DROP
+                fi
                 ipset destroy iran_dst 2>/dev/null
-                echo -e "${GREEN}Forwarded traffic to Iran has been unblocked.${NC}"; break
+
+                echo "Removing persistence..."
+                rm -f /etc/ipset.conf
+                systemctl disable ipset-restore.service >/dev/null 2>&1
+                rm -f /etc/systemd/system/ipset-restore.service
+                iptables-save > /etc/iptables/rules.v4
+
+                echo -e "${GREEN}Forwarded traffic to Iran has been unblocked and persistence is removed.${NC}"; break
                 ;;
             0) break ;;
             *) echo -e "${RED}Invalid option.${NC}"; sleep 2 ;;
@@ -462,13 +495,93 @@ block_iran_traffic_menu() {
     echo -e "${YELLOW}Press Enter to return...${NC}"; read
 }
 
-# --- Menu Display Function ---
+setup_fake_site() {
+    clear
+    echo -e "${HEADER_COLOR}--- Setup Fake Website (Nginx + SSL) ---${NC}"
+    echo -e "${YELLOW}--------------------------------------------------------------------${NC}"
+    echo -e "${WHITE}This tool will install Nginx and configure a fake website on your"
+    echo -e "server with a valid SSL certificate from Let's Encrypt."
+    echo -e ""
+    echo -e "${RED}REQUIREMENTS:${NC}"
+    echo -e "  1. You must have a ${WHITE}domain name${NC} (e.g., my-vps.com)."
+    echo -e "  2. In your DNS provider (like Cloudflare), you must create an"
+    echo -e "     ${WHITE}A record${NC} pointing your domain to this server's IP: ${GREEN}$(curl -s ifconfig.me)${NC}"
+    echo -e "  3. The Cloudflare proxy (orange cloud) should be ${WHITE}ON${NC} for better security."
+    echo -e ""
+    echo -e "${YELLOW}This process will occupy port 443 and 80.${NC}"
+    echo -e "${YELLOW}--------------------------------------------------------------------${NC}"
+    
+    read -p "Have you pointed your domain to the server IP? (y/N): " confirmation
+    if [[ ! "$confirmation" =~ ^[Yy]$ ]]; then
+        echo -e "${RED}Action cancelled. Please configure your domain first.${NC}"
+        return
+    fi
+
+    read -p "Please enter your domain name: " domain_name
+    if [ -z "$domain_name" ]; then
+        echo -e "${RED}Domain name cannot be empty. Aborting.${NC}"
+        return
+    fi
+
+    echo -e "${YELLOW}Step 1: Installing dependencies (Nginx & Certbot)...${NC}"
+    apt-get update
+    apt-get install -y nginx certbot python3-certbot-nginx git
+    if ! command -v nginx &> /dev/null || ! command -v certbot &> /dev/null; then
+        echo -e "${RED}Failed to install dependencies. Aborting.${NC}"
+        return
+    fi
+    systemctl start nginx
+    systemctl enable nginx
+
+    echo -e "${YELLOW}Step 2: Downloading website templates and selecting one randomly...${NC}"
+    local site_path="/var/www/html"
+    rm -rf "${site_path:?}"/*
+    git clone https://github.com/learning-zone/website-templates.git /tmp/templates
+    
+    # Find all template directories inside the cloned repo
+    mapfile -t templates < <(find /tmp/templates -mindepth 1 -maxdepth 1 -type d)
+
+    # Check if any templates were found
+    if [ ${#templates[@]} -eq 0 ]; then
+        echo -e "${RED}No templates found in the repository. Aborting.${NC}"
+        rm -rf /tmp/templates
+        return
+    fi
+
+    # Select a random index and copy the corresponding template
+    random_index=$(( RANDOM % ${#templates[@]} ))
+    selected_template="${templates[$random_index]}"
+    echo -e "${WHITE}Selected template: $(basename "$selected_template")${NC}"
+    cp -r "$selected_template"/* "$site_path"
+    rm -rf /tmp/templates
+    chown -R www-data:www-data "$site_path"
+
+    echo -e "${YELLOW}Step 3: Obtaining SSL certificate for $domain_name...${NC}"
+    certbot --nginx -d "$domain_name" --redirect --agree-tos --non-interactive -m "info@${domain_name}"
+    
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}--------------------------------------------------${NC}"
+        echo -e "${GREEN}SUCCESS! Your fake website is now live at:${NC}"
+        echo -e "${WHITE}https://$domain_name${NC}"
+        echo -e "${GREEN}The SSL certificate will be renewed automatically.${NC}"
+        echo -e "${GREEN}--------------------------------------------------${NC}"
+    else
+        echo -e "${RED}--------------------------------------------------${NC}"
+        echo -e "${RED}Error: Failed to obtain an SSL certificate.${NC}"
+        echo -e "${YELLOW}Please check the following:${NC}"
+        echo -e "  - Your domain is correctly pointed to this server's IP."
+        echo -e "  - Port 80 is not blocked by any other firewall."
+        echo -e "  - You are not exceeding Let's Encrypt rate limits."
+        echo -e "${RED}--------------------------------------------------${NC}"
+    fi
+}
+
 show_menu() {
     clear
     echo -e "${WHITE}Created by YouTube Channel: ${GREEN}@iAghapour${NC}"
     echo -e "${OPTION_COLOR}Tutorials for all these scripts are available on the channel${NC}"
     echo -e "${WHITE}https://www.youtube.com/@iAghapour${NC}"
-    echo -e "${RED}ver 1.0${NC}"
+    echo -e "${RED}ver 1.4${NC}"
     echo -e "${YELLOW}--------------------------------------------------${NC}"
     echo -e "${WHITE}                      Main Menu${NC}"
     echo -e "${YELLOW}--------------------------------------------------${NC}"
@@ -488,20 +601,20 @@ show_menu() {
     echo -e "  ${YELLOW}11)${OPTION_COLOR} Install h-ui ${GREEN}(Hysteria Core)${NC}"
     echo ""
     echo -e "${HEADER_COLOR}--- Side Tools ---${NC}"
-    echo -e "  ${YELLOW}12)${OPTION_COLOR} Reverse Tunnel ${RED}(SOON)${NC}"
+    echo -e "  ${YELLOW}12)${OPTION_COLOR} Setup Fake Website (for Camouflage)"
     echo -e "  ${YELLOW}13)${OPTION_COLOR} Block Forwarded Traffic to Iran"
     echo -e "  ${YELLOW}14)${OPTION_COLOR} SpeedTest"
+    echo -e "  ${YELLOW}15)${OPTION_COLOR} Reverse Tunnel ${RED}(SOON)${NC}"
     echo ""
     echo -e "   ${YELLOW}0)${OPTION_COLOR} QUIT"
     echo -e "${YELLOW}--------------------------------------------------${NC}"
 }
 
-# --- Main Logic ---
 main() {
     check_root
     while true; do
         show_menu
-        read -p "Enter your choice [0-14]: " choice
+        read -p "Enter your choice [0-15]: " choice
         case $choice in
             1) update_server ;;
             2) backup_restore_menu ;;
@@ -514,9 +627,10 @@ main() {
             9) install_sui ;;
             10) install_blitz ;;
             11) install_hui ;;
-            12) reverse_proxy ;;
+            12) setup_fake_site ;;
             13) block_iran_traffic_menu ;;
             14) run_speedtest ;;
+            15) reverse_proxy ;;
             0) echo -e "${GREEN}Goodbye!${NC}"; exit 0 ;;
             *) echo -e "${RED}Error: Invalid option.${NC}" ;;
         esac
@@ -528,4 +642,4 @@ main() {
     done
 }
 
-main
+main```
