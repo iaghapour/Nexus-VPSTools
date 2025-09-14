@@ -583,7 +583,7 @@ show_menu() {
     echo -e "${WHITE}Created by YouTube Channel: ${GREEN}@iAghapour${NC}"
     echo -e "${OPTION_COLOR}Tutorials for all these scripts are available on the channel${NC}"
     echo -e "${WHITE}https://www.youtube.com/@iAghapour${NC}"
-    echo -e "${RED}ver 1.6${NC}"
+    echo -e "${RED}ver 1.2${NC}"
     echo -e "${YELLOW}--------------------------------------------------${NC}"
     echo -e "${WHITE}                      Main Menu${NC}"
     echo -e "${YELLOW}--------------------------------------------------${NC}"
