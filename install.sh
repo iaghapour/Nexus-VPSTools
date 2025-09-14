@@ -504,16 +504,19 @@ setup_fake_site() {
     echo -e ""
     echo -e "${RED}REQUIREMENTS:${NC}"
     echo -e "  1. You must have a ${WHITE}domain name${NC} (e.g., my-vps.com)."
-    echo -e "  2. In your DNS provider (like Cloudflare), you must create an"
-    echo -e "     ${WHITE}A record${NC} pointing your domain to this server's IP: ${GREEN}$(curl -s ifconfig.me)${NC}"
-    echo -e "  3. The Cloudflare proxy (orange cloud) should be ${WHITE}ON${NC} for better security."
-    echo -e ""
-    echo -e "${YELLOW}This process will occupy port 443 and 80.${NC}"
+    echo -e "  2. In your DNS provider, create an ${WHITE}A record${NC} pointing your domain to"
+    echo -e "     this server's IP: ${GREEN}$(curl -4s ifconfig.me)${NC}" # Force IPv4 for IP address display
+    echo -e "  3. The Cloudflare proxy (orange cloud) should be ${WHITE}ON${NC}."
+    echo -e "  4. ${RED}CRITICAL:${NC} In Cloudflare's SSL/TLS tab, set the mode to ${GREEN}Full (Strict)${NC}."
+    echo -e "     Using 'Flexible' mode will cause a redirect loop error."
+    echo ""
+    echo -e "${YELLOW}INFO:${NC} Nginx will use port 443 (HTTPS) and port 80 (to redirect"
+    echo -e "all HTTP traffic to HTTPS)."
     echo -e "${YELLOW}--------------------------------------------------------------------${NC}"
     
-    read -p "Have you pointed your domain to the server IP? (y/N): " confirmation
+    read -p "Have you completed all the requirements above? (y/N): " confirmation
     if [[ ! "$confirmation" =~ ^[Yy]$ ]]; then
-        echo -e "${RED}Action cancelled. Please configure your domain first.${NC}"
+        echo -e "${RED}Action cancelled. Please complete the requirements first.${NC}"
         return
     fi
 
@@ -533,22 +536,18 @@ setup_fake_site() {
     systemctl start nginx
     systemctl enable nginx
 
-    echo -e "${YELLOW}Step 2: Downloading website templates and selecting one randomly...${NC}"
+    echo -e "${YELLOW}Step 2: Downloading templates and selecting one randomly...${NC}"
     local site_path="/var/www/html"
     rm -rf "${site_path:?}"/*
     git clone https://github.com/learning-zone/website-templates.git /tmp/templates
     
-    # Find all template directories inside the cloned repo
     mapfile -t templates < <(find /tmp/templates -mindepth 1 -maxdepth 1 -type d)
-
-    # Check if any templates were found
     if [ ${#templates[@]} -eq 0 ]; then
         echo -e "${RED}No templates found in the repository. Aborting.${NC}"
         rm -rf /tmp/templates
         return
     fi
 
-    # Select a random index and copy the corresponding template
     random_index=$(( RANDOM % ${#templates[@]} ))
     selected_template="${templates[$random_index]}"
     echo -e "${WHITE}Selected template: $(basename "$selected_template")${NC}"
@@ -581,7 +580,7 @@ show_menu() {
     echo -e "${WHITE}Created by YouTube Channel: ${GREEN}@iAghapour${NC}"
     echo -e "${OPTION_COLOR}Tutorials for all these scripts are available on the channel${NC}"
     echo -e "${WHITE}https://www.youtube.com/@iAghapour${NC}"
-    echo -e "${RED}ver 1.4${NC}"
+    echo -e "${RED}ver 1.5${NC}"
     echo -e "${YELLOW}--------------------------------------------------${NC}"
     echo -e "${WHITE}                      Main Menu${NC}"
     echo -e "${YELLOW}--------------------------------------------------${NC}"
